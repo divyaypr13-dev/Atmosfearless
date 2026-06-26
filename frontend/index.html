@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ATMOSFEARLESS</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="loadingScreen" style="position:fixed; inset:0; background:#0a0e1a; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div style="text-align:center;">
+        <h1 style="font-size:4rem; font-weight:900; letter-spacing:0.1em; margin-bottom:2rem;">
+            <span style="color:#22d3ee;">ATMOS</span><span style="color:white;">FEARLESS</span>
+        </h1>
+        <div style="color:rgba(6,182,212,0.8); font-family:monospace; font-size:0.875rem;">
+            <p class="loading-text">Initializing Climate Intelligence Network...</p>
+            <p class="loading-text">Loading Satellite Observations...</p>
+            <p class="loading-text">Synchronizing Earth System Models...</p>
+            <p class="loading-text">Building Digital Climate Twin...</p>
+        </div>
+    </div>
+</div>
+
+<nav style="position:fixed; width:100%; z-index:50; background:rgba(10,14,26,0.95); backdrop-filter:blur(20px); border-bottom:1px solid rgba(6,182,212,0.1);">
+    <div style="max-width:1280px; margin:0 auto; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+        <a href="#" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
+            <div style="width:40px; height:40px; background:linear-gradient(135deg,#22d3ee,#3b82f6); border-radius:8px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-satellite" style="color:white;"></i></div>
+            <span style="font-size:1.25rem; font-weight:900;"><span style="color:#22d3ee;">ATMOS</span><span style="color:white;">FEARLESS</span></span>
+        </a>
+        <div style="display:flex; gap:24px; font-size:0.875rem;">
+            <a href="#" style="color:#22d3ee; border-bottom:2px solid #22d3ee; padding-bottom:4px; text-decoration:none;">Home</a>
+            <a href="#map-section" style="color:#94a3b8; text-decoration:none; transition:0.3s;">Climate Map</a>
+            <a href="#climate-twin" style="color:#94a3b8; text-decoration:none; transition:0.3s;">Dashboard</a>
+            <a href="#simulation" style="color:#94a3b8; text-decoration:none; transition:0.3s;">Simulations</a>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span id="apiStatusDot" style="width:8px; height:8px; background:#eab308; border-radius:50%; animation:pulse 2s infinite;"></span>
+            <span id="apiStatusText" style="font-size:0.75rem; color:#64748b; font-family:monospace;">CHECKING...</span>
+        </div>
+    </div>
+</nav>
+
+<section style="min-height:100vh; background:#0a0e1a; padding-top:80px; display:flex; align-items:center; position:relative; overflow:hidden;">
+    <div style="position:absolute; inset:0; opacity:0.05; background-image: linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px); background-size: 60px 60px;"></div>
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px; position:relative; z-index:10;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;">
+            <div>
+                <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2); border-radius:9999px; padding:4px 16px; margin-bottom:24px;"><span style="width:8px; height:8px; background:#22d3ee; border-radius:50%; animation:pulse 2s infinite;"></span><span style="color:#67e8f9; font-size:0.75rem; font-family:monospace;">LIVE CLIMATE INTELLIGENCE</span></div>
+                <h1 style="font-size:4.5rem; font-weight:900; line-height:1.1; margin-bottom:16px;"><span style="color:white;">ATMOS</span><span style="background:linear-gradient(135deg,#22d3ee,#3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">FEARLESS</span></h1>
+                <p style="font-size:1.25rem; color:#cbd5e1; margin-bottom:16px; max-width:32rem;">AI-Powered Digital Twin of India's Climate using National Datasets, Satellite Intelligence, and Real-Time Earth Observation Systems.</p>
+                <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <a href="#map-section" style="background:linear-gradient(135deg,#22d3ee,#3b82f6); color:white; padding:14px 32px; border-radius:12px; font-weight:600; transition:0.3s; box-shadow:0 0 30px rgba(6,182,212,0.25); text-decoration:none; display:inline-flex; align-items:center;"><i class="fas fa-map" style="margin-right:8px;"></i>Explore Climate Map</a>
+                    <a href="#simulation" style="background:rgba(30,41,59,0.5); color:white; padding:14px 32px; border-radius:12px; font-weight:600; transition:0.3s; border:1px solid #334155; text-decoration:none; display:inline-flex; align-items:center;"><i class="fas fa-sliders-h" style="margin-right:8px;"></i>Run Simulation</a>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px;"><div style="font-size:2.25rem; font-weight:700; color:#22d3ee;">28</div><div style="font-size:0.875rem; color:#94a3b8;">States Monitored</div></div>
+                <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px;"><div style="font-size:2.25rem; font-weight:700; color:#60a5fa;">6</div><div style="font-size:0.875rem; color:#94a3b8;">Climate Layers</div></div>
+                <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px;"><div style="font-size:2.25rem; font-weight:700; color:#22c55e;">92%</div><div style="font-size:0.875rem; color:#94a3b8;">Prediction Confidence</div></div>
+                <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:8px; height:8px; background:#22c55e; border-radius:50%; animation:pulse 2s infinite;"></span><span style="font-size:1.25rem; font-weight:700; color:#22c55e;">Online</span></div><div style="font-size:0.875rem; color:#94a3b8;">Climate Twin</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="map-section" style="padding:40px 0; background:#0d1326; border-top:1px solid #1e293b;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; justify-content:space-between; margin-bottom:24px;">
+            <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                <label for="citySelect" style="color:#94a3b8; font-weight:500;">Select City:</label>
+                <select id="citySelect" style="background:#1e293b; border:1px solid #334155; color:white; border-radius:8px; padding:10px 16px; min-width:180px;"></select>
+                <button id="refreshDataBtn" style="background:#22d3ee; color:#0a0e1a; padding:8px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer;"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <div id="cityInfoDisplay" style="color:#94a3b8; font-size:0.875rem;"><span id="cityNameDisplay">Delhi</span> | <span id="cityCoordsDisplay">📍 Latitude: 28.61 | Longitude: 77.23</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:24px;">
+            <div style="background:rgba(15,23,42,0.6); border-radius:12px; border:1px solid #1e293b; overflow:hidden;">
+                <div id="indiaMap" style="height:500px; width:100%;"></div>
+                <div style="padding:12px 16px; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; gap:16px; font-size:0.75rem;"><span><span style="display:inline-block; width:12px; height:12px; background:#22c55e; border-radius:50%; margin-right:4px;"></span> Low Risk</span><span><span style="display:inline-block; width:12px; height:12px; background:#eab308; border-radius:50%; margin-right:4px;"></span> Medium Risk</span><span><span style="display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:50%; margin-right:4px;"></span> High Risk</span></div>
+                    <span style="font-size:0.75rem; color:#64748b;">Leaflet | © OpenStreetMap</span>
+                </div>
+            </div>
+            <div style="background:rgba(15,23,42,0.6); border-radius:12px; border:1px solid #1e293b; padding:24px;">
+                <h3 style="color:white; font-weight:600; margin-bottom:16px;">📍 <span id="infoCityName">Delhi</span></h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div style="background:rgba(30,41,59,0.5); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:0.75rem; color:#94a3b8;">Temperature</div><div style="font-size:1.5rem; font-weight:700; color:#22d3ee;" id="infoTemp">--°C</div></div>
+                    <div style="background:rgba(30,41,59,0.5); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:0.75rem; color:#94a3b8;">Rainfall</div><div style="font-size:1.5rem; font-weight:700; color:#60a5fa;" id="infoRain">--mm</div></div>
+                    <div style="background:rgba(30,41,59,0.5); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:0.75rem; color:#94a3b8;">Risk Score</div><div style="font-size:1.5rem; font-weight:700; color:#eab308;" id="infoRisk">--</div></div>
+                    <div style="background:rgba(30,41,59,0.5); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:0.75rem; color:#94a3b8;">Humidity</div><div style="font-size:1.5rem; font-weight:700; color:#22c55e;" id="infoHumidity">--%</div></div>
+                </div>
+                <div style="margin-top:16px; background:rgba(6,182,212,0.05); border-radius:8px; padding:12px; border:1px solid rgba(6,182,212,0.1);"><div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;">AI Prediction</div><div style="font-size:1rem; font-weight:600; color:white;" id="infoPrediction">--</div></div>
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <button class="layer-btn active" data-layer="temp" onclick="changeLayer('temp')">🌡️ Temp</button>
+                    <button class="layer-btn" data-layer="rain" onclick="changeLayer('rain')">🌧️ Rain</button>
+                    <button class="layer-btn" data-layer="risk" onclick="changeLayer('risk')">⚠️ Risk</button>
+                    <button class="layer-btn" data-layer="sat" onclick="changeLayer('sat')">🛰️ Sat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="climate-twin" style="padding:64px 0; background:#0d1326; border-top:1px solid rgba(6,182,212,0.1);">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <div style="text-align:center; margin-bottom:48px;"><div style="display:inline-block; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2); border-radius:9999px; padding:4px 16px; margin-bottom:16px;"><span style="color:#22d3ee; font-size:0.75rem; font-family:monospace;">LIVE WEATHER</span></div><h2 style="font-size:2rem; font-weight:700; color:white;">Current Conditions</h2><p style="color:#94a3b8; margin-top:8px;">Real-time data from Open-Meteo API</p></div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(6,182,212,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">🌡️ Temperature</span><i class="fas fa-thermometer-half" style="color:#22d3ee;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="liveTemp">--<span style="font-size:1rem; color:#94a3b8;">°C</span></div></div>
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(59,130,246,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">🌧️ Rainfall</span><i class="fas fa-cloud-rain" style="color:#60a5fa;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="liveRain">--<span style="font-size:1rem; color:#94a3b8;">mm</span></div></div>
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(34,197,94,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">💧 Humidity</span><i class="fas fa-tint" style="color:#22c55e;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="liveHumidity">--<span style="font-size:1rem; color:#94a3b8;">%</span></div></div>
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(168,85,247,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">💨 Wind Speed</span><i class="fas fa-wind" style="color:#a78bfa;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="liveWind">--<span style="font-size:1rem; color:#94a3b8;">km/h</span></div></div>
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(236,72,153,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">☁️ Cloud Cover</span><i class="fas fa-cloud" style="color:#ec4899;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="liveCloud">--<span style="font-size:1rem; color:#94a3b8;">%</span></div></div>
+            <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(20px); border:1px solid rgba(51,65,85,0.5); border-radius:12px; padding:24px; border-color:rgba(251,191,36,0.2);"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="color:#94a3b8; font-size:0.875rem;">📊 Pressure</span><i class="fas fa-gauge-high" style="color:#fbbf24;"></i></div><div style="font-size:2.25rem; font-weight:700; color:white; margin-top:8px;" id="livePressure">--<span style="font-size:1rem; color:#94a3b8;">hPa</span></div></div>
+        </div>
+        <div style="text-align:right; color:#64748b; font-size:0.75rem; margin-top:16px;">Updated: <span id="twinUpdate">Just now</span></div>
+    </div>
+</section>
+
+<section id="prediction" style="padding:64px 0; background:#0a0e1a; border-top:1px solid #1e293b;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:32px;">
+            <div style="background:rgba(30,41,59,0.5); border-radius:12px; border:1px solid #1e293b; padding:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="color:white; font-weight:600;">🤖 AI Prediction</h3>
+                    <span style="font-size:0.75rem; color:#64748b; font-family:monospace;">CNN-LSTM Model</span>
+                </div>
+                <div style="background:rgba(15,23,42,0.5); border-radius:8px; padding:20px; border-left:4px solid #22d3ee;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;"><span style="color:#94a3b8;">Prediction:</span><span style="font-size:2rem; font-weight:700; color:white;" id="predictionValue">--</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-top:8px;"><span style="color:#94a3b8;">Uncertainty:</span><span style="font-size:1.25rem; font-weight:600; color:#fbbf24;" id="uncertaintyValue">±--</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-top:8px; font-size:0.875rem; color:#94a3b8;"><span>95% Confidence Interval:</span><span style="color:white;">[<span id="ciLower">--</span>, <span id="ciUpper">--</span>]</span></div>
+                </div>
+                <div style="margin-top:16px; background:rgba(6,182,212,0.05); border-radius:8px; padding:16px; border:1px solid rgba(6,182,212,0.1);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><span style="color:#22d3ee; font-weight:500;">🔍 Explainable AI</span><span style="font-size:0.75rem; padding:2px 8px; border-radius:12px; background:rgba(30,41,59,0.5);" id="confidenceLevel">--</span></div>
+                    <p style="color:#cbd5e1; font-size:0.875rem;" id="xaiExplanation">Select a city to see explanation.</p>
+                </div>
+            </div>
+            <div style="background:rgba(30,41,59,0.5); border-radius:12px; border:1px solid #1e293b; padding:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;"><h3 style="color:white; font-weight:600;">⚠️ Climate Risk</h3><span style="font-size:0.75rem; color:#64748b; font-family:monospace;">Score 0-10</span></div>
+                <div style="text-align:center; padding:16px 0;"><div style="font-size:4rem; font-weight:900;" id="criScore">--</div><div style="font-size:0.875rem; color:#94a3b8;">/ 10</div><div style="margin-top:8px; display:inline-block; padding:4px 16px; border-radius:9999px; font-size:0.875rem; font-weight:600; background:rgba(30,41,59,0.5); color:#94a3b8;" id="criLevel">--</div></div>
+                <div style="border-top:1px solid #1e293b; padding-top:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#94a3b8;">🔥 Temperature Risk:</span><span id="impactAgri" style="color:#eab308;">--</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#94a3b8;">💧 Rainfall Risk:</span><span id="impactWater" style="color:#22c55e;">--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="simulation" style="padding:64px 0; background:#0d1326; border-top:1px solid #1e293b;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <div style="text-align:center; margin-bottom:48px;">
+            <div style="display:inline-block; background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.2); border-radius:9999px; padding:4px 16px; margin-bottom:16px;"><span style="color:#a78bfa; font-size:0.75rem; font-family:monospace;">SIMULATOR</span></div>
+            <h2 style="font-size:2rem; font-weight:700; color:white;">What-If Simulator</h2>
+            <p style="color:#94a3b8; margin-top:8px;">Adjust climate variables to see how the prediction changes</p>
+        </div>
+        <div style="max-width:768px; margin:0 auto; background:rgba(30,41,59,0.5); border-radius:12px; border:1px solid #1e293b; padding:32px;">
+            <div style="margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><label style="color:#94a3b8;">🔥 Temperature Delta</label><span style="color:#22d3ee; font-weight:700;" id="tempDisplay">+0°C</span></div>
+                <input type="range" id="tempSlider" min="-5" max="5" step="0.5" value="0" style="width:100%;">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#64748b;"><span>-5°C</span><span>0°C</span><span>+5°C</span></div>
+            </div>
+            <div style="margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><label style="color:#94a3b8;">💧 Rainfall Delta</label><span style="color:#60a5fa; font-weight:700;" id="rainDisplay">+0%</span></div>
+                <input type="range" id="rainSlider" min="-50" max="50" step="5" value="0" style="width:100%;">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#64748b;"><span>-50%</span><span>0%</span><span>+50%</span></div>
+            </div>
+            <button id="runSimulation" style="width:100%; background:linear-gradient(135deg,#22d3ee,#3b82f6); color:white; padding:14px; border:none; border-radius:12px; font-weight:700; cursor:pointer; transition:0.3s;"><i class="fas fa-play" style="margin-right:8px;"></i> Run Simulation</button>
+            <div id="simResult" style="margin-top:16px; text-align:center; font-weight:500; color:#22c55e; min-height:2rem;"></div>
+        </div>
+    </div>
+</section>
+
+<section id="alerts" style="padding:64px 0; background:#0a0e1a; border-top:1px solid #1e293b;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <h2 style="font-size:1.5rem; font-weight:700; color:white; text-align:center; margin-bottom:32px;">🚨 Alerts & Warnings</h2>
+        <div id="alertsFeed" style="max-width:768px; margin:0 auto;"><div class="text-center text-gray-400 text-sm py-4">✅ No active alerts.</div></div>
+    </div>
+</section>
+
+<section style="padding:64px 0; background:#0d1326; border-top:1px solid #1e293b;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px;">
+        <h2 style="font-size:1.5rem; font-weight:700; color:white; text-align:center; margin-bottom:32px;">📜 Prediction History</h2>
+        <div style="max-width:1024px; margin:0 auto; background:rgba(30,41,59,0.5); border-radius:12px; border:1px solid #1e293b; overflow:hidden;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; background:#1e293b; padding:12px 16px; font-weight:600; color:#94a3b8; font-size:0.875rem;"><span>Date</span><span>Temp (°C)</span><span>Rainfall (mm)</span><span>Prediction</span><span>Risk</span></div>
+            <div id="predictionHistory" style="padding:4px 16px;"><div class="text-gray-400 text-sm p-4 text-center">No predictions available.</div></div>
+        </div>
+    </div>
+</section>
+
+<footer style="background:#0a0e1a; border-top:1px solid #1e293b; padding:24px 0;">
+    <div style="max-width:1280px; margin:0 auto; padding:0 16px; text-align:center;">
+        <p style="color:#94a3b8; font-size:0.875rem;">ATMOSFEARLESS — AI-Powered Climate Digital Twin for India</p>
+        <p style="color:#64748b; font-size:0.75rem; margin-top:4px;">Built with ❤️ using IMD & ISRO datasets • ISRO Hackathon 2026</p>
+    </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
