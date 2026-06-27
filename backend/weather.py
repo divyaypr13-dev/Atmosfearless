@@ -17,10 +17,17 @@ INDIAN_CITIES = {
     'patna': {'lat': 25.59, 'lon': 85.14}
 }
 
+# Realistic base temperatures for different cities
+CITY_BASE_TEMP = {
+    'delhi': 38, 'mumbai': 30, 'bangalore': 26, 'chennai': 32,
+    'kolkata': 33, 'hyderabad': 34, 'pune': 28, 'ahmedabad': 36,
+    'jaipur': 37, 'lucknow': 35, 'bhopal': 33, 'patna': 34
+}
+
 def get_live_weather(lat, lon):
     """
     Fetch real-time weather data from Open-Meteo API.
-    If it fails, returns realistic mock data.
+    If it fails, returns city-specific realistic mock data.
     """
     try:
         url = "https://api.open-meteo.com/v1/forecast"
@@ -56,19 +63,16 @@ def get_live_weather(lat, lon):
         }
     except Exception as e:
         print(f"⚠️ Weather API error: {e} - Using fallback data")
-        # --- FALLBACK: Realistic mock data based on city ---
+        # --- FALLBACK: City-specific realistic data ---
         city_name = "delhi"
         for name, coords in INDIAN_CITIES.items():
             if abs(coords['lat'] - lat) < 1 and abs(coords['lon'] - lon) < 1:
                 city_name = name
                 break
         
-        mock_temps = {
-            'delhi': 38, 'mumbai': 30, 'bangalore': 26, 'chennai': 32,
-            'kolkata': 33, 'hyderabad': 34, 'pune': 28, 'ahmedabad': 36,
-            'jaipur': 37, 'lucknow': 35, 'bhopal': 33, 'patna': 34
-        }
-        temp = mock_temps.get(city_name, 32) + random.randint(-3, 3)
+        # Use city-specific base temperature
+        base_temp = CITY_BASE_TEMP.get(city_name, 32)
+        temp = base_temp + random.randint(-3, 3)
         
         return {
             'temperature': temp,
