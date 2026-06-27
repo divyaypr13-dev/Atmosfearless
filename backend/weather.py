@@ -17,18 +17,34 @@ INDIAN_CITIES = {
     'patna': {'lat': 25.59, 'lon': 85.14}
 }
 
-# Realistic base temperatures for different cities
-CITY_BASE_TEMP = {
-    'delhi': 38, 'mumbai': 30, 'bangalore': 26, 'chennai': 32,
-    'kolkata': 33, 'hyderabad': 34, 'pune': 28, 'ahmedabad': 36,
-    'jaipur': 37, 'lucknow': 35, 'bhopal': 33, 'patna': 34
+# City-specific realistic data (used as fallback)
+CITY_DATA = {
+    'delhi': {'temp': 38, 'humidity': 45, 'rain': 0, 'wind': 12, 'cloud': 20},
+    'mumbai': {'temp': 30, 'humidity': 65, 'rain': 2.5, 'wind': 8, 'cloud': 40},
+    'bangalore': {'temp': 26, 'humidity': 55, 'rain': 0.8, 'wind': 10, 'cloud': 30},
+    'chennai': {'temp': 32, 'humidity': 50, 'rain': 0.5, 'wind': 9, 'cloud': 25},
+    'kolkata': {'temp': 33, 'humidity': 60, 'rain': 1.2, 'wind': 6, 'cloud': 35},
+    'hyderabad': {'temp': 34, 'humidity': 48, 'rain': 0.3, 'wind': 11, 'cloud': 22},
+    'pune': {'temp': 28, 'humidity': 52, 'rain': 0.9, 'wind': 7, 'cloud': 28},
+    'ahmedabad': {'temp': 36, 'humidity': 42, 'rain': 0.1, 'wind': 14, 'cloud': 15},
+    'jaipur': {'temp': 37, 'humidity': 40, 'rain': 0.2, 'wind': 13, 'cloud': 18},
+    'lucknow': {'temp': 35, 'humidity': 50, 'rain': 0.6, 'wind': 10, 'cloud': 25},
+    'bhopal': {'temp': 33, 'humidity': 55, 'rain': 0.7, 'wind': 8, 'cloud': 30},
+    'patna': {'temp': 34, 'humidity': 58, 'rain': 0.5, 'wind': 7, 'cloud': 28}
 }
 
 def get_live_weather(lat, lon):
     """
-    Fetch real-time weather data from Open-Meteo API.
-    If it fails, returns city-specific realistic mock data.
+    Try Open-Meteo first. If it fails, use city-specific fallback.
     """
+    # Find which city this lat/lon belongs to
+    city_name = "delhi"
+    for name, coords in INDIAN_CITIES.items():
+        if abs(coords['lat'] - lat) < 1 and abs(coords['lon'] - lon) < 1:
+            city_name = name
+            break
+    
+    # Try Open-Meteo
     try:
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -43,44 +59,41 @@ def get_live_weather(lat, lon):
         current = data.get('current_weather', {})
         hourly = data.get('hourly', {})
         
-        humidity = 45
+        humidity = CITY_DATA[city_name]['humidity']
         if 'relative_humidity_2m' in hourly and len(hourly['relative_humidity_2m']) > 0:
             humidity = hourly['relative_humidity_2m'][0]
         
-        cloud_cover = 20
+        cloud_cover = CITY_DATA[city_name]['cloud']
         if 'cloud_cover' in hourly and len(hourly['cloud_cover']) > 0:
             cloud_cover = hourly['cloud_cover'][0]
         
         return {
-            'temperature': current.get('temperature', 30),
-            'rainfall': current.get('precipitation', 0),
+            'temperature': current.get('temperature', CITY_DATA[city_name]['temp']),
+            'rainfall': current.get('precipitation', CITY_DATA[city_name]['rain']),
             'humidity': humidity,
-            'wind_speed': current.get('windspeed', 10),
+            'wind_speed': current.get('windspeed', CITY_DATA[city_name]['wind']),
             'cloud_cover': cloud_cover,
             'pressure': 1013,
             'timestamp': current.get('time', datetime.now().isoformat()),
-            'source': 'Open-Meteo'
+            'source': 'Open-Meteo',
+            'city': city_name
         }
     except Exception as e:
-        print(f"⚠️ Weather API error: {e} - Using fallback data")
-        # --- FALLBACK: City-specific realistic data ---
-        city_name = "delhi"
-        for name, coords in INDIAN_CITIES.items():
-            if abs(coords['lat'] - lat) < 1 and abs(coords['lon'] - lon) < 1:
-                city_name = name
-                break
-        
-        # Use city-specific base temperature
-        base_temp = CITY_BASE_TEMP.get(city_name, 32)
-        temp = base_temp + random.randint(-3, 3)
+        print(f"⚠️ Weather API error: {e} - Using city-specific fallback")
+        # --- CITY-SPECIFIC FALLBACK ---
+        city = CITY_DATA[city_name]
+        # Add small random variation
+        temp_variation = random.randint(-3, 3)
+        rain_variation = random.choice([0, 0, 0, 0.2, 0.5, 0.8, 1.0])
         
         return {
-            'temperature': temp,
-            'rainfall': random.choice([0, 0, 0, 0.5, 1.2, 0]),
-            'humidity': random.randint(35, 75),
-            'wind_speed': random.randint(5, 18),
-            'cloud_cover': random.randint(10, 60),
+            'temperature': city['temp'] + temp_variation,
+            'rainfall': city['rain'] + rain_variation,
+            'humidity': city['humidity'] + random.randint(-5, 5),
+            'wind_speed': city['wind'] + random.randint(-3, 3),
+            'cloud_cover': city['cloud'] + random.randint(-10, 10),
             'pressure': 1013,
             'timestamp': datetime.now().isoformat(),
-            'source': 'Fallback Data'
+            'source': 'City-Specific Fallback',
+            'city': city_name
         }
