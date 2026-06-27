@@ -1,8 +1,6 @@
 ﻿import os
 import sys
 import random
-import torch
-import numpy as np
 from flask import request, jsonify, Blueprint
 from datetime import datetime
 
@@ -17,96 +15,37 @@ from backend.utils import safe_float
 api = Blueprint('api', __name__, url_prefix='/api')
 
 # ============================================================
-# GLOBAL VARIABLES
+# MOCK DATA (Fallback when no model)
 # ============================================================
-model = None
-data_loaded = False
-mean_val = 0
-std_val = 1
+MOCK_DATA = {
+    'delhi': {'temperature': 32, 'rainfall': 0, 'humidity': 45, 'wind_speed': 12, 'cloud_cover': 20, 'pressure': 1012, 'risk_score': 5.5, 'severity': 'MODERATE', 'temp_risk': 7.0, 'rain_risk': 4.0, 'prediction': -0.176, 'uncertainty': 0.010, 'confidence_lower': -0.195, 'confidence_upper': -0.156},
+    'mumbai': {'temperature': 28, 'rainfall': 2.5, 'humidity': 65, 'wind_speed': 8, 'cloud_cover': 40, 'pressure': 1008, 'risk_score': 6.2, 'severity': 'HIGH', 'temp_risk': 5.0, 'rain_risk': 7.5, 'prediction': -0.052, 'uncertainty': 0.020, 'confidence_lower': -0.091, 'confidence_upper': -0.013},
+    'bangalore': {'temperature': 24, 'rainfall': 0.8, 'humidity': 55, 'wind_speed': 10, 'cloud_cover': 30, 'pressure': 1015, 'risk_score': 3.2, 'severity': 'LOW', 'temp_risk': 2.0, 'rain_risk': 4.5, 'prediction': 0.045, 'uncertainty': 0.015, 'confidence_lower': 0.015, 'confidence_upper': 0.075},
+    'kolkata': {'temperature': 30, 'rainfall': 1.2, 'humidity': 60, 'wind_speed': 6, 'cloud_cover': 35, 'pressure': 1010, 'risk_score': 4.8, 'severity': 'MODERATE', 'temp_risk': 6.0, 'rain_risk': 3.5, 'prediction': -0.092, 'uncertainty': 0.018, 'confidence_lower': -0.127, 'confidence_upper': -0.057},
+    'chennai': {'temperature': 29, 'rainfall': 0.5, 'humidity': 50, 'wind_speed': 9, 'cloud_cover': 25, 'pressure': 1011, 'risk_score': 4.0, 'severity': 'MODERATE', 'temp_risk': 5.5, 'rain_risk': 2.5, 'prediction': 0.012, 'uncertainty': 0.022, 'confidence_lower': -0.031, 'confidence_upper': 0.055},
+    'hyderabad': {'temperature': 31, 'rainfall': 0.3, 'humidity': 48, 'wind_speed': 11, 'cloud_cover': 22, 'pressure': 1013, 'risk_score': 4.5, 'severity': 'MODERATE', 'temp_risk': 6.5, 'rain_risk': 2.0, 'prediction': -0.038, 'uncertainty': 0.016, 'confidence_lower': -0.069, 'confidence_upper': -0.007},
+    'pune': {'temperature': 26, 'rainfall': 0.9, 'humidity': 52, 'wind_speed': 7, 'cloud_cover': 28, 'pressure': 1014, 'risk_score': 3.8, 'severity': 'LOW', 'temp_risk': 3.5, 'rain_risk': 4.0, 'prediction': 0.021, 'uncertainty': 0.019, 'confidence_lower': -0.016, 'confidence_upper': 0.058},
+    'ahmedabad': {'temperature': 34, 'rainfall': 0.1, 'humidity': 42, 'wind_speed': 14, 'cloud_cover': 15, 'pressure': 1009, 'risk_score': 6.8, 'severity': 'HIGH', 'temp_risk': 8.5, 'rain_risk': 5.0, 'prediction': -0.210, 'uncertainty': 0.012, 'confidence_lower': -0.233, 'confidence_upper': -0.187},
+    'jaipur': {'temperature': 33, 'rainfall': 0.2, 'humidity': 40, 'wind_speed': 13, 'cloud_cover': 18, 'pressure': 1010, 'risk_score': 6.0, 'severity': 'HIGH', 'temp_risk': 8.0, 'rain_risk': 4.0, 'prediction': -0.183, 'uncertainty': 0.014, 'confidence_lower': -0.210, 'confidence_upper': -0.156},
+    'lucknow': {'temperature': 31, 'rainfall': 0.6, 'humidity': 50, 'wind_speed': 10, 'cloud_cover': 25, 'pressure': 1011, 'risk_score': 5.0, 'severity': 'MODERATE', 'temp_risk': 6.0, 'rain_risk': 4.0, 'prediction': -0.125, 'uncertainty': 0.017, 'confidence_lower': -0.158, 'confidence_upper': -0.092}
+}
+
+def get_city_data(city_name):
+    key = city_name.lower()
+    return MOCK_DATA.get(key, MOCK_DATA['delhi'])
 
 # ============================================================
-# MODEL LOADING
+# LIVE PREDICTION BASED ON WEATHER
 # ============================================================
-def load_model():
-    global model
-    if model is None:
-        try:
-            from src.model_architecture import ClimateCNN_LSTM
-            model_path = 'model/climate_model.pth'
-            
-            # If model exists, load it
-            if os.path.exists(model_path):
-                model = ClimateCNN_LSTM(input_channels=1)
-                model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-                model.eval()
-                print("✅ AI Model loaded successfully!")
-                return model
-            else:
-                print("⚠️ Model file not found. Using synthetic predictions.")
-                return None
-        except Exception as e:
-            print(f"❌ Error loading model: {e}")
-            return None
-    return model
-
-def load_real_data():
-    global data_loaded, mean_val, std_val
-    if not data_loaded:
-        try:
-            import xarray as xr
-            DATA_FOLDER = r'C:\Users\HP\OneDrive\Desktop\imd_data'
-            
-            if not os.path.exists(DATA_FOLDER):
-                DATA_FOLDER = r'C:\Users\DSF20\OneDrive\Desktop\imd_data'
-                
-            if os.path.exists(DATA_FOLDER):
-                nc_files = [f for f in os.listdir(DATA_FOLDER) if f.endswith('.nc')]
-                if nc_files:
-                    # Load sample data to get mean/std for normalization
-                    ds = xr.open_dataset(os.path.join(DATA_FOLDER, nc_files[0]))
-                    rain = ds['rain'].values
-                    mean_val = np.mean(rain)
-                    std_val = np.std(rain)
-                    data_loaded = True
-                    print(f"✅ Data loaded: mean={mean_val:.2f}, std={std_val:.2f}")
-                    ds.close()
-            else:
-                print("⚠️ No IMD data found")
-        except Exception as e:
-            print(f"⚠️ Error loading data: {e}")
-    
-    return data_loaded
-
-# ============================================================
-# REAL PREDICTION FUNCTION
-# ============================================================
-def get_real_prediction(temp, rain, humidity=50):
-    """
-    Generate prediction based on live weather data.
-    If model is available, use it. Otherwise, use formula-based prediction.
-    """
-    load_model()
-    load_real_data()
-    
-    # --- Formula-Based Prediction (Works without model) ---
-    # This simulates AI prediction using weather patterns
-    
-    # 1. Temperature effect: Higher temp = more evaporation = possible less rain
-    temp_normalized = (temp - 25) / 10  # Normalize around 25°C
-    
-    # 2. Rainfall effect: Current rain indicates future patterns
+def get_live_prediction(temp, rain, humidity):
+    # Simulate AI prediction based on live weather
+    temp_normalized = (temp - 25) / 10
     rain_normalized = rain / 100
-    
-    # 3. Humidity effect: Higher humidity = more likely rain
     humidity_normalized = humidity / 100
     
-    # 4. Combine factors to create a realistic prediction
     prediction = -0.2 + (temp_normalized * 0.3) + (rain_normalized * 0.4) + (humidity_normalized * 0.2) + random.uniform(-0.05, 0.05)
-    
-    # 5. Clip to reasonable range
     prediction = max(-1.0, min(1.0, prediction))
     
-    # 6. Calculate uncertainty based on variability
     uncertainty = 0.02 + abs(prediction) * 0.01 + random.uniform(0.005, 0.02)
     uncertainty = max(0.01, min(0.05, uncertainty))
     
@@ -119,13 +58,7 @@ def get_real_prediction(temp, rain, humidity=50):
         ]
     }
 
-# ============================================================
-# REAL RISK SCORE FUNCTION
-# ============================================================
-def get_real_risk_score(temp, rain, prediction):
-    """Calculate risk score based on live data"""
-    
-    # Temperature risk: Higher temp = higher risk
+def get_live_risk_score(temp, rain, prediction):
     if temp > 35:
         temp_risk = 10
     elif temp > 30:
@@ -135,26 +68,20 @@ def get_real_risk_score(temp, rain, prediction):
     else:
         temp_risk = max(0, 2 + (temp - 20) * 0.2)
     
-    # Rainfall risk: Very low or very high rain both risky
     if rain < 5:
-        rain_risk = 8 + (5 - rain) * 0.8  # Drought risk
+        rain_risk = 8 + (5 - rain) * 0.8
     elif rain > 80:
-        rain_risk = 8 + (rain - 80) * 0.1  # Flood risk
+        rain_risk = 8 + (rain - 80) * 0.1
     else:
         rain_risk = 3 + (rain - 5) * 0.05
     
-    # Combine risks
     total_risk = (temp_risk * 0.6 + rain_risk * 0.4)
-    
-    # Adjust based on prediction (negative = dry, positive = wet)
     if prediction < -0.3:
-        total_risk = min(10, total_risk + 1)  # Dry prediction increases risk
+        total_risk = min(10, total_risk + 1)
     elif prediction > 0.3:
-        total_risk = min(10, total_risk + 1)  # Wet prediction increases risk
-    
+        total_risk = min(10, total_risk + 1)
     total_risk = max(0, min(10, total_risk))
     
-    # Severity
     if total_risk < 3:
         severity = "LOW"
     elif total_risk < 6:
@@ -171,50 +98,17 @@ def get_real_risk_score(temp, rain, prediction):
         'rainfall_risk': round(rain_risk, 2)
     }
 
-# ============================================================
-# EXPLANATION GENERATION
-# ============================================================
 def generate_explanation(temp, rain, humidity, prediction, risk):
-    """Generate human-readable explanation"""
+    temp_text = f"Temperature of {temp}°C is {'high' if temp > 30 else 'moderate' if temp > 25 else 'cool'}."
+    rain_text = f"Rainfall of {rain}mm is {'high' if rain > 50 else 'moderate' if rain > 20 else 'low'}."
+    hum_text = f"Humidity is {'high' if humidity > 80 else 'moderate' if humidity > 60 else 'low'}."
     
-    # Temperature interpretation
-    if temp > 35:
-        temp_text = f"High temperature of {temp}°C is causing significant heat stress."
-    elif temp > 30:
-        temp_text = f"Temperature of {temp}°C is above normal, increasing evaporation."
-    elif temp > 25:
-        temp_text = f"Moderate temperature of {temp}°C supports normal weather patterns."
-    else:
-        temp_text = f"Cool temperature of {temp}°C is favorable."
-    
-    # Rainfall interpretation
-    if rain < 2:
-        rain_text = f"Very low rainfall ({rain}mm) indicates dry conditions."
-    elif rain < 10:
-        rain_text = f"Low rainfall of {rain}mm suggests below-normal precipitation."
-    elif rain < 30:
-        rain_text = f"Moderate rainfall of {rain}mm is near normal."
-    else:
-        rain_text = f"High rainfall of {rain}mm suggests wet conditions."
-    
-    # Humidity interpretation
-    if humidity > 80:
-        hum_text = "High humidity indicates significant moisture in the air."
-    elif humidity > 60:
-        hum_text = "Moderate humidity supports normal weather patterns."
-    else:
-        hum_text = "Low humidity indicates dry air conditions."
-    
-    # Prediction interpretation
     if prediction < -0.3:
         pred_text = "The model predicts below-normal rainfall (dry conditions)."
     elif prediction > 0.3:
         pred_text = "The model predicts above-normal rainfall (wet conditions)."
     else:
         pred_text = "The model predicts near-normal rainfall."
-    
-    # Risk interpretation
-    risk_text = f"Risk level: {risk['severity']}. Score: {risk['risk_score']}/10."
     
     confidence = "HIGH" if risk['risk_score'] < 3 or risk['risk_score'] > 7 else "MEDIUM"
     
@@ -231,13 +125,10 @@ def generate_explanation(temp, rain, humidity, prediction, risk):
 
 🎯 **Confidence Level: {confidence}**
 - The model is {confidence.lower()} about this prediction.
-- {risk_text}
+- Risk Score: {risk['risk_score']}/10 ({risk['severity']})
 
 💡 **What this means:**
-This prediction is based on current weather patterns and historical data. 
-{('Take precautions against heat stress.' if temp > 35 else '')}
-{('Be prepared for dry conditions.' if rain < 5 else '')}
-{('Expect wet conditions.' if rain > 50 else '')}
+This prediction is based on current weather patterns.
 """
     return {
         'text': explanation.strip(),
@@ -254,8 +145,8 @@ def health():
         return '', 200
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None,
-        'data_source': 'real',
+        'model_loaded': False,
+        'data_source': 'live_weather',
         'timestamp': datetime.now().isoformat()
     })
 
@@ -284,16 +175,27 @@ def get_climate():
     
     # Get LIVE weather
     weather = get_live_weather(float(lat), float(lon))
-    if weather is None:
-        return jsonify({'error': 'Failed to fetch weather data'}), 500
     
-    # Get LIVE prediction based on weather
+    # If weather fails, use mock data
+    if weather is None:
+        mock = get_city_data(city)
+        weather = {
+            'temperature': mock['temperature'],
+            'rainfall': mock['rainfall'],
+            'humidity': mock['humidity'],
+            'wind_speed': mock['wind_speed'],
+            'cloud_cover': mock['cloud_cover'],
+            'pressure': mock['pressure'],
+            'timestamp': datetime.now().isoformat(),
+            'source': 'Mock Data'
+        }
+    
     temp = weather['temperature']
     rain = weather['rainfall']
     humidity = weather['humidity']
     
-    prediction = get_real_prediction(temp, rain, humidity)
-    risk = get_real_risk_score(temp, rain, prediction['prediction'])
+    prediction = get_live_prediction(temp, rain, humidity)
+    risk = get_live_risk_score(temp, rain, prediction['prediction'])
     
     return jsonify({
         'location': {'city': city, 'latitude': lat, 'longitude': lon},
@@ -316,13 +218,11 @@ def predict():
     temp = safe_float(data.get('temperature', 30.0))
     rain = safe_float(data.get('rainfall', 50.0))
     humidity = safe_float(data.get('humidity', 50.0))
-    city = data.get('city', 'Unknown')
     
-    prediction = get_real_prediction(temp, rain, humidity)
-    risk = get_real_risk_score(temp, rain, prediction['prediction'])
+    prediction = get_live_prediction(temp, rain, humidity)
+    risk = get_live_risk_score(temp, rain, prediction['prediction'])
     
     return jsonify({
-        'city': city,
         'prediction': prediction,
         'risk_score': risk,
         'timestamp': datetime.now().isoformat()
@@ -344,13 +244,12 @@ def whatif():
     base_rain = safe_float(data.get('rainfall', 50.0))
     base_humidity = safe_float(data.get('humidity', 50.0))
     
-    # Apply deltas
     new_temp = base_temp + temp_delta
     new_rain = base_rain * (1 + rain_delta / 100)
-    new_humidity = base_humidity + (temp_delta * 2)  # Temp increase increases humidity
+    new_humidity = base_humidity + (temp_delta * 2)
     
-    prediction = get_real_prediction(new_temp, new_rain, new_humidity)
-    risk = get_real_risk_score(new_temp, new_rain, prediction['prediction'])
+    prediction = get_live_prediction(new_temp, new_rain, new_humidity)
+    risk = get_live_risk_score(new_temp, new_rain, prediction['prediction'])
     
     return jsonify({
         'whatif_prediction': prediction['prediction'],
@@ -378,14 +277,12 @@ def explain_human():
     temp = safe_float(data.get('temperature', 30.0))
     rain = safe_float(data.get('rainfall', 50.0))
     humidity = safe_float(data.get('humidity', 50.0))
-    city = data.get('city', 'Unknown')
     
-    prediction = get_real_prediction(temp, rain, humidity)
-    risk = get_real_risk_score(temp, rain, prediction['prediction'])
+    prediction = get_live_prediction(temp, rain, humidity)
+    risk = get_live_risk_score(temp, rain, prediction['prediction'])
     explanation = generate_explanation(temp, rain, humidity, prediction['prediction'], risk)
     
     return jsonify({
-        'city': city,
         'prediction': prediction['prediction'],
         'prediction_meaning': 'Based on current weather patterns',
         'human_explanation': explanation['text'],
