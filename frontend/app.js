@@ -1,13 +1,11 @@
 ﻿// ============================================================
-// ATMOSFEARLESS - Frontend Logic
+// ATMOSFEARLESS - Complete Frontend Logic
 // ============================================================
 
 console.log('🚀 ATMOSFEARLESS loaded!');
 
 // --- API Configuration ---
-// Use the deployed backend URL or localhost for development/
-const API_BASE_URL = 'http://localhost:5001/api';
- //const API_BASE_URL = 'https://climate-ai-backend-miuc.onrender.com/api';
+const API_BASE_URL = 'https://atmosfearless-api.onrender.com/api';
 
 // --- Indian Cities ---
 const indianCities = [
@@ -72,29 +70,43 @@ function populateDropdown() {
     citySelect.value = JSON.stringify(currentCity);
 }
 
-// --- Update UI with Data ---
+// ============================================================
+// UPDATE UI WITH DATA
+// ============================================================
 function updateUI(data) {
-    if (!data) return;
+    if (!data) {
+        console.warn('⚠️ No data to display');
+        return;
+    }
+    
+    console.log('📊 Updating UI with:', data);
     
     const weather = data.live_weather || {};
     const prediction = data.ai_prediction || {};
     const risk = data.risk_score || {};
     
-    // Weather
-    document.getElementById('liveTemp').innerHTML = (weather.temperature || '--') + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
-    document.getElementById('liveRain').innerHTML = (weather.rainfall || 0) + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
-    document.getElementById('liveHumidity').innerHTML = (weather.humidity || '--') + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    document.getElementById('liveWind').innerHTML = (weather.wind_speed || '--') + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
-    document.getElementById('liveCloud').innerHTML = (weather.cloud_cover || '--') + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    document.getElementById('livePressure').innerHTML = (weather.pressure || '--') + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
+    // --- Update Live Weather ---
+    const temp = weather.temperature !== undefined ? weather.temperature : '--';
+    const rain = weather.rainfall !== undefined ? weather.rainfall : 0;
+    const humidity = weather.humidity !== undefined ? weather.humidity : '--';
+    const wind = weather.wind_speed !== undefined ? weather.wind_speed : '--';
+    const cloud = weather.cloud_cover !== undefined ? weather.cloud_cover : '--';
+    const pressure = weather.pressure !== undefined ? weather.pressure : '--';
     
-    // Info Panel
-    document.getElementById('infoTemp').textContent = (weather.temperature || '--') + '°C';
-    document.getElementById('infoRain').textContent = (weather.rainfall || 0) + 'mm';
-    document.getElementById('infoHumidity').textContent = (weather.humidity || '--') + '%';
+    document.getElementById('liveTemp').innerHTML = temp + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
+    document.getElementById('liveRain').innerHTML = rain + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
+    document.getElementById('liveHumidity').innerHTML = humidity + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    document.getElementById('liveWind').innerHTML = wind + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
+    document.getElementById('liveCloud').innerHTML = cloud + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    document.getElementById('livePressure').innerHTML = pressure + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
+    
+    // --- Update Info Panel ---
+    document.getElementById('infoTemp').textContent = temp + '°C';
+    document.getElementById('infoRain').textContent = rain + 'mm';
+    document.getElementById('infoHumidity').textContent = humidity + '%';
     document.getElementById('infoRisk').textContent = risk.risk_score || '--';
     
-    // Prediction
+    // --- Update Prediction ---
     const pred = prediction.prediction || 0;
     document.getElementById('predictionValue').textContent = pred.toFixed(3);
     document.getElementById('infoPrediction').textContent = pred.toFixed(3);
@@ -102,7 +114,7 @@ function updateUI(data) {
     document.getElementById('ciLower').textContent = (prediction.confidence_interval?.[0] || 0).toFixed(3);
     document.getElementById('ciUpper').textContent = (prediction.confidence_interval?.[1] || 0).toFixed(3);
     
-    // Risk
+    // --- Update Risk ---
     const score = risk.risk_score || 0;
     document.getElementById('criScore').textContent = score.toFixed(1);
     document.getElementById('impactAgri').textContent = (risk.temperature_risk || 0).toFixed(1);
@@ -118,27 +130,34 @@ function updateUI(data) {
     rl.textContent = levelText;
     rl.style.color = color;
     
-    // Update time
+    // --- Update XAI Explanation ---
+    if (data.human_explanation) {
+        document.getElementById('xaiExplanation').textContent = data.human_explanation;
+    }
+    
+    // --- Update Time ---
     document.getElementById('twinUpdate').textContent = 'Just now';
     
-    // Store data for map
+    // --- Store data for map ---
     cityData[currentCity.name] = {
-        temperature: weather.temperature || 0,
-        rainfall: weather.rainfall || 0,
+        temperature: temp,
+        rainfall: rain,
         risk_score: risk.risk_score || 0
     };
     addCityMarkers();
     highlightCity(currentCity);
+    
+    console.log('✅ UI updated successfully!');
 }
 
-// --- Fetch Data from API ---
+// ============================================================
+// FETCH DATA FROM API
+// ============================================================
 async function fetchAllDataForCity(city) {
     if (!city) return;
     console.log('📡 Fetching data for', city.name);
     
-    // Show loading state
-    const infoCityName = document.getElementById('infoCityName');
-    if (infoCityName) infoCityName.textContent = city.name + ' ⏳';
+    document.getElementById('infoCityName').textContent = city.name + ' ⏳';
     document.getElementById('cityNameDisplay').textContent = city.name;
     document.getElementById('cityCoordsDisplay').textContent = '📍 Latitude: ' + city.lat + ' | Longitude: ' + city.lng;
     
@@ -156,6 +175,8 @@ async function fetchAllDataForCity(city) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
         console.log('📊 Data received:', data);
+        
+        // Call updateUI with the data
         updateUI(data);
         
         // Get XAI explanation
@@ -171,7 +192,7 @@ async function fetchAllDataForCity(city) {
                 if (xaiData.summary?.confidence) {
                     const el = document.getElementById('confidenceLevel');
                     el.textContent = xaiData.summary.confidence;
-                    el.style.color = xaiData.summary.confidence === 'HIGH' ? '#22c55e' : xaiData.summary.confidence === 'MEDIUM' ? '#eab308' : '#ef4444';
+                    el.style.color = xaiData.summary.confidence === 'HIGH' ? '#22c55e' : '#eab308';
                     el.style.background = 'rgba(30,41,59,0.5)';
                     el.style.padding = '2px 12px';
                     el.style.borderRadius = '12px';
@@ -181,6 +202,8 @@ async function fetchAllDataForCity(city) {
             console.warn('XAI not available:', xaiErr);
         }
         
+        document.getElementById('infoCityName').textContent = city.name;
+        
     } catch (error) {
         console.error('❌ Error fetching data:', error);
         document.getElementById('infoCityName').textContent = city.name + ' ❌';
@@ -188,7 +211,9 @@ async function fetchAllDataForCity(city) {
     }
 }
 
-// --- Map Functions ---
+// ============================================================
+// MAP FUNCTIONS
+// ============================================================
 function initMap() {
     if (map) { map.invalidateSize(); return; }
     map = L.map('indiaMap').setView([20.59, 78.96], 4.5);
@@ -269,7 +294,9 @@ function changeLayer(layer) {
     addCityMarkers();
 }
 
-// --- Simulation ---
+// ============================================================
+// WHAT-IF SIMULATION
+// ============================================================
 function runSimulation() {
     const tempChange = parseFloat(document.getElementById('tempSlider').value || 0);
     const rainChange = parseFloat(document.getElementById('rainSlider').value || 0);
@@ -302,7 +329,9 @@ function runSimulation() {
     });
 }
 
-// --- Event Listeners ---
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM loaded');
     
