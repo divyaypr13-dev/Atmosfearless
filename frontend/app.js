@@ -81,24 +81,47 @@ function updateUI(data) {
     
     console.log('📊 Updating UI with:', data);
     
+    // --- FIX: Extract data properly ---
     const weather = data.live_weather || {};
     const prediction = data.ai_prediction || {};
     const risk = data.risk_score || {};
     
-    // --- Update Live Weather ---
-    const temp = weather.temperature !== undefined ? weather.temperature : '--';
-    const rain = weather.rainfall !== undefined ? weather.rainfall : 0;
-    const humidity = weather.humidity !== undefined ? weather.humidity : '--';
-    const wind = weather.wind_speed !== undefined ? weather.wind_speed : '--';
-    const cloud = weather.cloud_cover !== undefined ? weather.cloud_cover : '--';
-    const pressure = weather.pressure !== undefined ? weather.pressure : '--';
+    // Debug: Log what we're getting
+    console.log('🌤️ Weather object:', weather);
+    console.log('🌡️ Temperature value:', weather.temperature);
     
-    document.getElementById('liveTemp').innerHTML = temp + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
-    document.getElementById('liveRain').innerHTML = rain + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
-    document.getElementById('liveHumidity').innerHTML = humidity + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    document.getElementById('liveWind').innerHTML = wind + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
-    document.getElementById('liveCloud').innerHTML = cloud + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    document.getElementById('livePressure').innerHTML = pressure + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
+    // --- FIX: Use the correct field names ---
+    // The API returns: temperature, rainfall, humidity, wind_speed, cloud_cover, pressure
+    const temp = weather.temperature !== undefined && weather.temperature !== null ? weather.temperature : '--';
+    const rain = weather.rainfall !== undefined && weather.rainfall !== null ? weather.rainfall : 0;
+    const humidity = weather.humidity !== undefined && weather.humidity !== null ? weather.humidity : '--';
+    const wind = weather.wind_speed !== undefined && weather.wind_speed !== null ? weather.wind_speed : '--';
+    const cloud = weather.cloud_cover !== undefined && weather.cloud_cover !== null ? weather.cloud_cover : '--';
+    const pressure = weather.pressure !== undefined && weather.pressure !== null ? weather.pressure : '--';
+    
+    console.log('🌡️ Final temp value:', temp);
+    
+    // --- Update Live Weather ---
+    const tempEl = document.getElementById('liveTemp');
+    if (tempEl) {
+        tempEl.innerHTML = temp + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
+        console.log('✅ Updated temperature to:', temp);
+    }
+    
+    const rainEl = document.getElementById('liveRain');
+    if (rainEl) rainEl.innerHTML = rain + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
+    
+    const humidityEl = document.getElementById('liveHumidity');
+    if (humidityEl) humidityEl.innerHTML = humidity + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    
+    const windEl = document.getElementById('liveWind');
+    if (windEl) windEl.innerHTML = wind + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
+    
+    const cloudEl = document.getElementById('liveCloud');
+    if (cloudEl) cloudEl.innerHTML = cloud + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    
+    const pressureEl = document.getElementById('livePressure');
+    if (pressureEl) pressureEl.innerHTML = pressure + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
     
     // --- Update Info Panel ---
     document.getElementById('infoTemp').textContent = temp + '°C';
@@ -130,7 +153,7 @@ function updateUI(data) {
     rl.textContent = levelText;
     rl.style.color = color;
     
-    // --- Update XAI Explanation ---
+    // --- Update XAI ---
     if (data.human_explanation) {
         document.getElementById('xaiExplanation').textContent = data.human_explanation;
     }
@@ -149,7 +172,6 @@ function updateUI(data) {
     
     console.log('✅ UI updated successfully!');
 }
-
 // ============================================================
 // FETCH DATA FROM API
 // ============================================================
