@@ -1,4 +1,4 @@
-services:
+﻿services:
   - type: web
     name: atmosfearless-api
     runtime: python
@@ -10,5 +10,5 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
-    healthCheckPath: /api/health
-    autoDeploy: true
+      - key: PORT
+        value: 10000

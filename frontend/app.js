@@ -1,13 +1,7 @@
-﻿// ============================================================
-// ATMOSFEARLESS - Complete Frontend Logic
-// ============================================================
+﻿console.log('🚀 ATMOSFEARLESS loaded!');
 
-console.log('🚀 ATMOSFEARLESS loaded!');
-
-// --- API Configuration ---
 const API_BASE_URL = 'https://atmosfearless-api.onrender.com/api';
 
-// --- Indian Cities ---
 const indianCities = [
     { name: 'Delhi', lat: 28.61, lng: 77.23 },
     { name: 'Mumbai', lat: 19.08, lng: 72.88 },
@@ -23,22 +17,18 @@ const indianCities = [
     { name: 'Patna', lat: 25.59, lng: 85.14 }
 ];
 
-// --- State ---
 let currentCity = { name: 'Delhi', lat: 28.61, lng: 77.23 };
 let map = null;
 let markers = [];
 let currentLayer = 'temp';
 let cityData = {};
 
-// --- DOM Elements ---
 const citySelect = document.getElementById('citySelect');
 const refreshBtn = document.getElementById('refreshDataBtn');
 
-// --- API Status Check ---
 async function checkAPIStatus() {
     const dot = document.getElementById('apiStatusDot');
     const text = document.getElementById('apiStatusText');
-    
     try {
         const response = await fetch(`${API_BASE_URL}/health`);
         if (response.ok) {
@@ -53,12 +43,10 @@ async function checkAPIStatus() {
         dot.style.background = '#ef4444';
         text.textContent = 'OFFLINE';
         text.style.color = '#ef4444';
-        console.warn('API is offline:', error.message);
         return false;
     }
 }
 
-// --- Populate City Dropdown ---
 function populateDropdown() {
     citySelect.innerHTML = '';
     indianCities.forEach(city => {
@@ -70,66 +58,31 @@ function populateDropdown() {
     citySelect.value = JSON.stringify(currentCity);
 }
 
-// ============================================================
-// UPDATE UI WITH DATA
-// ============================================================
 function updateUI(data) {
-    if (!data) {
-        console.warn('⚠️ No data to display');
-        return;
-    }
-    
-    console.log('📊 Updating UI with:', data);
-    
-    // --- FIX: Extract data properly ---
+    if (!data) return;
     const weather = data.live_weather || {};
     const prediction = data.ai_prediction || {};
     const risk = data.risk_score || {};
     
-    // Debug: Log what we're getting
-    console.log('🌤️ Weather object:', weather);
-    console.log('🌡️ Temperature value:', weather.temperature);
+    const temp = weather.temperature !== undefined ? weather.temperature : '--';
+    const rain = weather.rainfall !== undefined ? weather.rainfall : 0;
+    const humidity = weather.humidity !== undefined ? weather.humidity : '--';
+    const wind = weather.wind_speed !== undefined ? weather.wind_speed : '--';
+    const cloud = weather.cloud_cover !== undefined ? weather.cloud_cover : '--';
+    const pressure = weather.pressure !== undefined ? weather.pressure : '--';
     
-    // --- FIX: Use the correct field names ---
-    // The API returns: temperature, rainfall, humidity, wind_speed, cloud_cover, pressure
-    const temp = weather.temperature !== undefined && weather.temperature !== null ? weather.temperature : '--';
-    const rain = weather.rainfall !== undefined && weather.rainfall !== null ? weather.rainfall : 0;
-    const humidity = weather.humidity !== undefined && weather.humidity !== null ? weather.humidity : '--';
-    const wind = weather.wind_speed !== undefined && weather.wind_speed !== null ? weather.wind_speed : '--';
-    const cloud = weather.cloud_cover !== undefined && weather.cloud_cover !== null ? weather.cloud_cover : '--';
-    const pressure = weather.pressure !== undefined && weather.pressure !== null ? weather.pressure : '--';
+    document.getElementById('liveTemp').innerHTML = temp + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
+    document.getElementById('liveRain').innerHTML = rain + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
+    document.getElementById('liveHumidity').innerHTML = humidity + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    document.getElementById('liveWind').innerHTML = wind + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
+    document.getElementById('liveCloud').innerHTML = cloud + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
+    document.getElementById('livePressure').innerHTML = pressure + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
     
-    console.log('🌡️ Final temp value:', temp);
-    
-    // --- Update Live Weather ---
-    const tempEl = document.getElementById('liveTemp');
-    if (tempEl) {
-        tempEl.innerHTML = temp + '<span style="font-size:1rem; color:#94a3b8;">°C</span>';
-        console.log('✅ Updated temperature to:', temp);
-    }
-    
-    const rainEl = document.getElementById('liveRain');
-    if (rainEl) rainEl.innerHTML = rain + '<span style="font-size:1rem; color:#94a3b8;">mm</span>';
-    
-    const humidityEl = document.getElementById('liveHumidity');
-    if (humidityEl) humidityEl.innerHTML = humidity + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    
-    const windEl = document.getElementById('liveWind');
-    if (windEl) windEl.innerHTML = wind + '<span style="font-size:1rem; color:#94a3b8;">km/h</span>';
-    
-    const cloudEl = document.getElementById('liveCloud');
-    if (cloudEl) cloudEl.innerHTML = cloud + '<span style="font-size:1rem; color:#94a3b8;">%</span>';
-    
-    const pressureEl = document.getElementById('livePressure');
-    if (pressureEl) pressureEl.innerHTML = pressure + '<span style="font-size:1rem; color:#94a3b8;">hPa</span>';
-    
-    // --- Update Info Panel ---
     document.getElementById('infoTemp').textContent = temp + '°C';
     document.getElementById('infoRain').textContent = rain + 'mm';
     document.getElementById('infoHumidity').textContent = humidity + '%';
     document.getElementById('infoRisk').textContent = risk.risk_score || '--';
     
-    // --- Update Prediction ---
     const pred = prediction.prediction || 0;
     document.getElementById('predictionValue').textContent = pred.toFixed(3);
     document.getElementById('infoPrediction').textContent = pred.toFixed(3);
@@ -137,13 +90,11 @@ function updateUI(data) {
     document.getElementById('ciLower').textContent = (prediction.confidence_interval?.[0] || 0).toFixed(3);
     document.getElementById('ciUpper').textContent = (prediction.confidence_interval?.[1] || 0).toFixed(3);
     
-    // --- Update Risk ---
     const score = risk.risk_score || 0;
     document.getElementById('criScore').textContent = score.toFixed(1);
     document.getElementById('impactAgri').textContent = (risk.temperature_risk || 0).toFixed(1);
     document.getElementById('impactWater').textContent = (risk.rainfall_risk || 0).toFixed(1);
     
-    // Risk Level
     const rl = document.getElementById('criLevel');
     let levelText, color;
     if (score < 3) { levelText = 'LOW'; color = '#22c55e'; }
@@ -153,15 +104,12 @@ function updateUI(data) {
     rl.textContent = levelText;
     rl.style.color = color;
     
-    // --- Update XAI ---
     if (data.human_explanation) {
         document.getElementById('xaiExplanation').textContent = data.human_explanation;
     }
     
-    // --- Update Time ---
     document.getElementById('twinUpdate').textContent = 'Just now';
     
-    // --- Store data for map ---
     cityData[currentCity.name] = {
         temperature: temp,
         rainfall: rain,
@@ -169,16 +117,10 @@ function updateUI(data) {
     };
     addCityMarkers();
     highlightCity(currentCity);
-    
-    console.log('✅ UI updated successfully!');
 }
-// ============================================================
-// FETCH DATA FROM API
-// ============================================================
+
 async function fetchAllDataForCity(city) {
     if (!city) return;
-    console.log('📡 Fetching data for', city.name);
-    
     document.getElementById('infoCityName').textContent = city.name + ' ⏳';
     document.getElementById('cityNameDisplay').textContent = city.name;
     document.getElementById('cityCoordsDisplay').textContent = '📍 Latitude: ' + city.lat + ' | Longitude: ' + city.lng;
@@ -196,12 +138,8 @@ async function fetchAllDataForCity(city) {
         
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
-        console.log('📊 Data received:', data);
-        
-        // Call updateUI with the data
         updateUI(data);
         
-        // Get XAI explanation
         try {
             const xaiResponse = await fetch(`${API_BASE_URL}/explain_human`, {
                 method: 'POST',
@@ -233,16 +171,12 @@ async function fetchAllDataForCity(city) {
     }
 }
 
-// ============================================================
-// MAP FUNCTIONS
-// ============================================================
 function initMap() {
     if (map) { map.invalidateSize(); return; }
     map = L.map('indiaMap').setView([20.59, 78.96], 4.5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-    console.log('✅ Map initialized!');
     addCityMarkers();
 }
 
@@ -259,7 +193,6 @@ function addCityMarkers() {
         else if (risk > 5) color = '#f97316';
         else if (risk > 3) color = '#eab308';
         
-        // Layer-based colors
         if (currentLayer === 'temp') {
             const temp = data.temperature || 25;
             if (temp > 35) color = '#ef4444';
@@ -316,9 +249,6 @@ function changeLayer(layer) {
     addCityMarkers();
 }
 
-// ============================================================
-// WHAT-IF SIMULATION
-// ============================================================
 function runSimulation() {
     const tempChange = parseFloat(document.getElementById('tempSlider').value || 0);
     const rainChange = parseFloat(document.getElementById('rainSlider').value || 0);
@@ -351,17 +281,11 @@ function runSimulation() {
     });
 }
 
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM loaded');
-    
     populateDropdown();
     initMap();
     checkAPIStatus();
     
-    // Load default city
     setTimeout(() => fetchAllDataForCity(currentCity), 500);
     
     citySelect.addEventListener('change', function() {
@@ -384,13 +308,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('runSimulation').addEventListener('click', runSimulation);
     
-    // Hide loading screen
     const ls = document.getElementById('loadingScreen');
     if (ls) {
         setTimeout(function() { ls.style.display = 'none'; }, 1000);
     }
     
-    // Check API status every 60 seconds
     setInterval(checkAPIStatus, 60000);
     
     console.log('✅ ATMOSFEARLESS is ready!');
