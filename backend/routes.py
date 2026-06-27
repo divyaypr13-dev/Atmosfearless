@@ -1,6 +1,7 @@
 ﻿import os
 import sys
 import random
+import json
 from flask import request, jsonify, Blueprint
 from datetime import datetime
 
@@ -36,7 +37,7 @@ def get_city_data(city_name):
     return MOCK_DATA.get(key, MOCK_DATA['delhi'])
 
 # ============================================================
-# LIVE PREDICTION BASED ON WEATHER
+# HELPER FUNCTIONS
 # ============================================================
 def get_live_prediction(temp, rain, humidity):
     temp_normalized = (temp - 25) / 10
@@ -218,11 +219,13 @@ def predict():
     temp = safe_float(data.get('temperature', 30.0))
     rain = safe_float(data.get('rainfall', 50.0))
     humidity = safe_float(data.get('humidity', 50.0))
+    city = data.get('city', 'Unknown')
     
     prediction = get_live_prediction(temp, rain, humidity)
     risk = get_live_risk_score(temp, rain, prediction['prediction'])
     
     return jsonify({
+        'city': city,
         'prediction': prediction,
         'risk_score': risk,
         'timestamp': datetime.now().isoformat()
