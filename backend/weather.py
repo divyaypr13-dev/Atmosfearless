@@ -1,6 +1,9 @@
 ﻿import random
 from datetime import datetime
 
+# ============================================================
+# CITY COORDINATES
+# ============================================================
 INDIAN_CITIES = {
     'delhi': {'lat': 28.61, 'lon': 77.23},
     'mumbai': {'lat': 19.08, 'lon': 72.88},
@@ -17,7 +20,7 @@ INDIAN_CITIES = {
 }
 
 # ============================================================
-# MULTIPLE WEATHER PATTERNS FOR EACH CITY
+# REALISTIC WEATHER DATA FOR EACH CITY (5 Patterns Each)
 # ============================================================
 WEATHER_PATTERNS = {
     'delhi': [
@@ -106,10 +109,13 @@ WEATHER_PATTERNS = {
     ]
 }
 
+# ============================================================
+# GET WEATHER FUNCTION
+# ============================================================
 def get_live_weather(lat, lon):
     """
-    Returns realistic weather data for each city with random variation.
-    Each city has multiple weather patterns that change dynamically.
+    Returns realistic weather data for any city.
+    Each city has 5 different weather patterns that rotate.
     """
     # Find city from coordinates
     city_name = "delhi"
@@ -118,16 +124,15 @@ def get_live_weather(lat, lon):
             city_name = name
             break
     
-    # Get all patterns for this city
+    # Get patterns for this city
     patterns = WEATHER_PATTERNS.get(city_name, WEATHER_PATTERNS['delhi'])
     
-    # Select a random pattern (simulates changing weather)
-    # Use time-based selection to make it more realistic
+    # Select pattern based on time (changes every 5 minutes)
     import time
-    pattern_index = int(time.time() / 300) % len(patterns)  # Changes every 5 minutes
+    pattern_index = int(time.time() / 300) % len(patterns)
     selected = patterns[pattern_index]
     
-    # Add small random variation to make it look dynamic
+    # Add small random variation
     temp_variation = random.randint(-1, 1)
     humidity_variation = random.randint(-3, 3)
     wind_variation = random.randint(-1, 1)
