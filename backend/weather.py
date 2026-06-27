@@ -17,6 +17,10 @@ INDIAN_CITIES = {
 }
 
 def get_live_weather(lat, lon):
+    """
+    Fetch real-time weather data from Open-Meteo API.
+    Returns weather data or None if fetch fails.
+    """
     try:
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -31,13 +35,23 @@ def get_live_weather(lat, lon):
         current = data.get('current_weather', {})
         hourly = data.get('hourly', {})
         
+        # Extract humidity from hourly data
+        humidity = 45  # default fallback
+        if 'relative_humidity_2m' in hourly and len(hourly['relative_humidity_2m']) > 0:
+            humidity = hourly['relative_humidity_2m'][0]
+        
+        # Extract cloud cover from hourly data
+        cloud_cover = 20  # default fallback
+        if 'cloud_cover' in hourly and len(hourly['cloud_cover']) > 0:
+            cloud_cover = hourly['cloud_cover'][0]
+        
         return {
             'temperature': current.get('temperature', 0),
             'rainfall': current.get('precipitation', 0),
-            'humidity': hourly.get('relative_humidity_2m', [45])[0] if 'hourly' in data else 45,
+            'humidity': humidity,
             'wind_speed': current.get('windspeed', 0),
-            'cloud_cover': hourly.get('cloud_cover', [20])[0] if 'hourly' in data else 20,
-            'pressure': 1013,
+            'cloud_cover': cloud_cover,
+            'pressure': 1013,  # default pressure
             'timestamp': current.get('time', datetime.now().isoformat()),
             'source': 'Open-Meteo'
         }
